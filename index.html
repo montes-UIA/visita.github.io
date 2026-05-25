@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rally STI 2026 — Panel de Evaluador</title>
+  <meta name="description" content="Sistema de puntuación y ranking para el Rally STI 2026. Panel exclusivo para evaluadores." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <!-- ========== PANTALLA: LOGIN ========== -->
+  <div id="screen-login" class="screen active">
+    <div class="login-bg">
+      <div class="login-orb orb1"></div>
+      <div class="login-orb orb2"></div>
+      <div class="login-orb orb3"></div>
+    </div>
+    <div class="login-container">
+      <div class="login-card">
+        <div class="login-logo">
+          <div class="logo-icon">🎯</div>
+          <h1 class="login-title">Rally STI <span class="year">2026</span></h1>
+          <p class="login-subtitle">Panel de Evaluador</p>
+        </div>
+
+        <div id="login-error" class="alert-error" style="display:none;">
+          <span>⚠️</span> PIN incorrecto. Inténtalo de nuevo.
+        </div>
+
+        <form id="login-form" onsubmit="handleLogin(event)">
+          <div class="form-group">
+            <label for="station-select" class="form-label">Estación</label>
+            <select id="station-select" class="form-input" required>
+              <option value="">— Selecciona tu estación —</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="pin-input" class="form-label">PIN de Evaluador</label>
+            <div class="pin-wrapper">
+              <input type="password" id="pin-input" class="form-input pin-input"
+                placeholder="••••" maxlength="10" autocomplete="current-password" required />
+              <button type="button" class="pin-toggle" onclick="togglePin()" aria-label="Mostrar PIN">👁</button>
+            </div>
+          </div>
+          <button type="submit" class="btn-primary btn-full" id="btn-login">
+            <span class="btn-text">Entrar al Panel</span>
+            <span class="btn-icon">→</span>
+          </button>
+        </form>
+
+        <div class="login-footer">
+          <a href="#" onclick="showScreen('screen-ranking'); return false;" class="link-ranking">
+            📊 Ver Ranking Público
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== NAVBAR (visible en pantallas internas) ========== -->
+  <nav class="navbar" id="navbar" style="display:none;">
+    <div class="nav-brand" onclick="showScreen('screen-dashboard')">
+      <span class="nav-icon">🎯</span>
+      <span class="nav-title">Rally STI</span>
+    </div>
+    <div class="nav-center">
+      <span id="nav-station-name" class="nav-station-badge"></span>
+    </div>
+    <div class="nav-actions">
+      <button class="nav-btn" onclick="showScreen('screen-ranking')" title="Ranking">
+        🏆 <span class="nav-btn-label">Ranking</span>
+      </button>
+      <button class="nav-btn nav-btn-logout" onclick="handleLogout()" title="Salir">
+        ⏻ <span class="nav-btn-label">Salir</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- ========== PANTALLA: DASHBOARD EVALUADOR ========== -->
+  <div id="screen-dashboard" class="screen with-navbar">
+    <div class="page-header">
+      <div class="page-header-content">
+        <h2 class="page-title">Panel de Evaluador</h2>
+        <p class="page-subtitle" id="dashboard-station-label">Selecciona la estación a evaluar</p>
+      </div>
+      <button class="btn-secondary" onclick="showScreen('screen-ranking')">
+        🏆 Ver Ranking
+      </button>
+    </div>
+
+    <div class="stations-grid" id="stations-grid">
+      <!-- Se llena dinámicamente -->
+    </div>
+  </div>
+
+  <!-- ========== PANTALLA: SCORING (puntuación por estación) ========== -->
+  <div id="screen-scoring" class="screen with-navbar">
+    <div class="page-header">
+      <div class="page-header-content">
+        <button class="btn-back" onclick="goBackToDashboard()">
+          ← Volver
+        </button>
+        <div>
+          <h2 class="page-title" id="scoring-station-name">Estación</h2>
+          <p class="page-subtitle" id="scoring-station-desc"></p>
+        </div>
+      </div>
+      <div class="sync-indicator" id="sync-indicator" title="Estado de sincronización">
+        <span class="sync-dot"></span>
+        <span class="sync-label">Conectado</span>
+      </div>
+    </div>
+
+    <div class="scoring-card">
+      <div class="scoring-instructions">
+        <span class="info-icon">ℹ️</span>
+        Asigna puntos del <strong>0 al 5</strong> a cada equipo. Los cambios se sincronizan automáticamente.
+      </div>
+
+      <div class="teams-table">
+        <div class="teams-table-header">
+          <span>Equipo</span>
+          <span>Puntuación</span>
+          <span class="col-status">Estado</span>
+        </div>
+        <div id="teams-list">
+          <!-- Se llena dinámicamente -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== PANTALLA: RANKING ========== -->
+  <div id="screen-ranking" class="screen">
+    <div class="ranking-bg">
+      <div class="ranking-orb orb1"></div>
+      <div class="ranking-orb orb2"></div>
+    </div>
+
+    <div class="ranking-container">
+      <div class="ranking-header">
+        <button class="btn-back-ranking" id="btn-back-ranking" onclick="goBackFromRanking()">← Volver</button>
+        <div class="ranking-title-block">
+          <h1 class="ranking-main-title">🏆 Ranking General</h1>
+          <p class="ranking-event-name">Rally STI 2026</p>
+        </div>
+        <div class="live-badge">
+          <span class="live-dot"></span> LIVE
+        </div>
+      </div>
+
+      <!-- Podio top 3 -->
+      <div class="podium-section" id="podium-section">
+        <!-- Se llena dinámicamente -->
+      </div>
+
+      <!-- Tabla completa -->
+      <div class="ranking-table-card">
+        <table class="ranking-table">
+          <thead>
+            <tr>
+              <th class="col-pos">Pos.</th>
+              <th>Equipo</th>
+              <th class="col-pts">Puntos</th>
+              <th class="col-detail">Detalle</th>
+            </tr>
+          </thead>
+          <tbody id="ranking-table-body">
+            <!-- Se llena dinámicamente -->
+          </tbody>
+        </table>
+      </div>
+
+      <div class="ranking-footer">
+        <p>Última actualización: <span id="last-update">—</span></p>
+        <button class="btn-secondary" onclick="showScreen('screen-login')" id="btn-login-from-ranking">
+          🎯 Acceso Evaluador
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== TOAST NOTIFICATIONS ========== -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <!-- ========== MODAL DE CONFIRMACIÓN ========== -->
+  <div id="modal-overlay" class="modal-overlay" style="display:none;">
+    <div class="modal-card">
+      <h3 id="modal-title">Confirmación</h3>
+      <p id="modal-body">¿Estás seguro?</p>
+      <div class="modal-actions">
+        <button class="btn-secondary" onclick="closeModal()">Cancelar</button>
+        <button class="btn-danger" id="modal-confirm-btn">Confirmar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Firebase SDK -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js";
+    import { getDatabase, ref, set, onValue, get } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-database.js";
+
+    // ===================================================================
+    // ⚙️ CONFIGURACIÓN — Reemplaza con tus datos de Firebase
+    // Sigue las instrucciones en FIREBASE_SETUP.md
+    // ===================================================================
+    const firebaseConfig = {
+      apiKey: "AIzaSyA_IPhzj1fRCQTbaPY_IhwWgSj07Xurx0g",
+      authDomain: "rally-sti-2026.firebaseapp.com",
+      databaseURL: "https://rally-sti-2026-default-rtdb.firebaseio.com",
+      projectId: "rally-sti-2026",
+      storageBucket: "rally-sti-2026.firebasestorage.app",
+      messagingSenderId: "345695911908",
+      appId: "1:345695911908:web:e7743bef3aa667a6b811f1",
+      measurementId: "G-HS1TBG239K"
+    };
+
+    // ===================================================================
+    // 📋 DATOS DEL EVENTO — Edita equipos y estaciones aquí
+    // ===================================================================
+    const CONFIG = {
+      eventName: "Rally STI 2026",
+      evaluatorPin: "sti2026",   // ← Cambia este PIN antes de publicar
+      stations: [
+        { id: "s1", order: 1, name: "Desarrollo",             description: "Actividad de Desarrollo" },
+        { id: "s2", order: 2, name: "Inteligencia Artificial", description: "Actividad de IA" },
+        { id: "s3", order: 3, name: "Ciberseguridad",         description: "Actividad de Ciberseguridad" },
+      ],
+      teams: [
+        { id: "t1", name: "Tigres" },
+        { id: "t2", name: "Jaguares" },
+        { id: "t3", name: "Linces" },
+        { id: "t4", name: "Pumas" },
+        { id: "t5", name: "Cheetahs" },
+      ]
+    };
+
+    // ===================================================================
+    // 🔥 FIREBASE INIT
+    // ===================================================================
+    let db = null;
+    let firebaseReady = false;
+    try {
+      const app = initializeApp(firebaseConfig);
+      db = getDatabase(app);
+      firebaseReady = true;
+    } catch (e) {
+      console.warn("Firebase no configurado. Usando localStorage como fallback.", e);
+    }
+
+    // Exponer globalmente
+    window.RALLY_CONFIG = CONFIG;
+    window.RALLY_DB = db;
+    window.RALLY_FB_READY = firebaseReady;
+    window.RALLY_FB = { ref, set, onValue, get };
+
+    // Iniciar la app después de cargar Firebase
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initApp);
+    } else {
+      initApp();
+    }
+  </script>
+
+  <script src="script.js"></script>
+</body>
+</html>
