@@ -1,15 +1,19 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Rally STI 2026 — Panel de Evaluador</title>
-  <meta name="description" content="Sistema de puntuación y ranking para el Rally STI 2026. Panel exclusivo para evaluadores." />
+  <meta name="description"
+    content="Sistema de puntuación y ranking para el Rally STI 2026. Panel exclusivo para evaluadores." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+    rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
 </head>
+
 <body>
 
   <!-- ========== PANTALLA: LOGIN ========== -->
@@ -41,8 +45,8 @@
           <div class="form-group">
             <label for="pin-input" class="form-label">PIN de Evaluador</label>
             <div class="pin-wrapper">
-              <input type="password" id="pin-input" class="form-input pin-input"
-                placeholder="••••" maxlength="10" autocomplete="current-password" required />
+              <input type="password" id="pin-input" class="form-input pin-input" placeholder="••••" maxlength="10"
+                autocomplete="current-password" required />
               <button type="button" class="pin-toggle" onclick="togglePin()" aria-label="Mostrar PIN">👁</button>
             </div>
           </div>
@@ -205,8 +209,7 @@
     import { getDatabase, ref, set, onValue, get } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-database.js";
 
     // ===================================================================
-    // ⚙️ CONFIGURACIÓN — Reemplaza con tus datos de Firebase
-    // Sigue las instrucciones en FIREBASE_SETUP.md
+    // ⚙️ CONFIGURACIÓN — FIREBASE
     // ===================================================================
     const firebaseConfig = {
       apiKey: "AIzaSyA_IPhzj1fRCQTbaPY_IhwWgSj07Xurx0g",
@@ -220,15 +223,15 @@
     };
 
     // ===================================================================
-    // 📋 DATOS DEL EVENTO — Edita equipos y estaciones aquí
+    // 📋 DATOS DEL EVENTO — Aquí se editan equipos y estaciones 
     // ===================================================================
     const CONFIG = {
       eventName: "Rally STI 2026",
-      evaluatorPin: "sti2026",   // ← Cambia este PIN antes de publicar
+      evaluatorPin: "sti2026",
       stations: [
-        { id: "s1", order: 1, name: "Desarrollo",             description: "Actividad de Desarrollo" },
+        { id: "s1", order: 1, name: "Desarrollo", description: "Actividad de Desarrollo" },
         { id: "s2", order: 2, name: "Inteligencia Artificial", description: "Actividad de IA" },
-        { id: "s3", order: 3, name: "Ciberseguridad",         description: "Actividad de Ciberseguridad" },
+        { id: "s3", order: 3, name: "Ciberseguridad", description: "Actividad de Ciberseguridad" },
       ],
       teams: [
         { id: "t1", name: "Tigres" },
@@ -268,4 +271,5 @@
 
   <script src="script.js"></script>
 </body>
+
 </html>
