@@ -122,6 +122,7 @@ function showScreen(screenId) {
   if (screenId === 'screen-ranking') {
     renderRanking();
     updateLastUpdate();
+    launchFireworks();          // 🎆 Celebración
   } else if (screenId === 'screen-dashboard') {
     renderDashboard();
   }
@@ -452,3 +453,239 @@ function escHtml(str) {
 setInterval(() => {
   if (state.currentScreen === 'screen-ranking') updateLastUpdate();
 }, 30000);
+
+// ---------------------------------------------------------------
+// 🎆 FUEGOS ARTIFICIALES
+// ---------------------------------------------------------------
+(function () {
+  const DURATION   = 4500;   // ms que dura la animación completa
+  const FADE_START = 3500;   // ms cuando empieza a desaparecer
+  const ROCKETS    = 14;     // cuántos cohetes se lanzan
+
+  // Paleta de colores festivos
+  const PALETTE = [
+    '#ff6584', '#ffb347', '#f7c31a', '#6c63ff',
+    '#43e97b', '#00d2ff', '#ff4b4b', '#fc5c7d',
+    '#a18cd1', '#ffecd2', '#ffffff', '#84fab0',
+  ];
+
+  let animId   = null;   // requestAnimationFrame id
+  let stopTime = 0;      // timestamp cuando debe parar
+  let particles = [];    // lista de partículas activas
+  let canvas, ctx;
+
+  /* ---- Inicializar canvas ---- */
+  function initCanvas() {
+    canvas = document.getElementById('fireworks-canvas');
+    if (!canvas) return false;
+    ctx = canvas.getContext('2d');
+    resize();
+    window.addEventListener('resize', resize);
+    return true;
+  }
+
+  function resize() {
+    if (!canvas) return;
+    canvas.width  = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+
+  /* ---- Partícula base ---- */
+  class Particle {
+    constructor(x, y, vx, vy, color, radius, life) {
+      this.x      = x;
+      this.y      = y;
+      this.vx     = vx;
+      this.vy     = vy;
+      this.color  = color;
+      this.radius = radius;
+      this.life   = life;     // 0..1
+      this.decay  = 0.012 + Math.random() * 0.012;
+      this.gravity = 0.08;
+      this.tail   = [];       // rastro de posiciones
+    }
+    update() {
+      this.tail.push({ x: this.x, y: this.y });
+      if (this.tail.length > 6) this.tail.shift();
+      this.vy  += this.gravity;
+      this.x   += this.vx;
+      this.y   += this.vy;
+      this.life -= this.decay;
+      this.vx  *= 0.97;     // fricción
+    }
+    draw() {
+      // Rastro
+      for (let i = 0; i < this.tail.length; i++) {
+        const alpha = (i / this.tail.length) * this.life * 0.4;
+        ctx.beginPath();
+        ctx.arc(this.tail[i].x, this.tail[i].y, this.radius * 0.5, 0, Math.PI * 2);
+        ctx.fillStyle = this.color + Math.round(alpha * 255).toString(16).padStart(2,'0');
+        ctx.fill();
+      }
+      // Partícula
+      ctx.save();
+      ctx.globalAlpha = Math.max(0, this.life);
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+      ctx.fillStyle = this.color;
+      ctx.shadowBlur   = 8;
+      ctx.shadowColor  = this.color;
+      ctx.fill();
+      ctx.restore();
+    }
+    isDead() { return this.life <= 0; }
+  }
+
+  /* ---- Cohete (sube y explota) ---- */
+  class Rocket {
+    constructor(delay) {
+      this.delay   = delay;
+      this.elapsed = 0;
+      this.fired   = false;
+      this.x       = canvas.width  * (0.1 + Math.random() * 0.8);
+      this.y       = canvas.height + 10;
+      this.tx      = canvas.width  * (0.15 + Math.random() * 0.7);  // destino x
+      this.ty      = canvas.height * (0.1  + Math.random() * 0.35); // destino y
+      this.speed   = 6 + Math.random() * 5;
+      this.color   = PALETTE[Math.floor(Math.random() * PALETTE.length)];
+      this.exploded = false;
+      this.tail    = [];
+    }
+    update(dt) {
+      this.elapsed += dt;
+      if (this.elapsed < this.delay) return;
+      if (this.exploded) return;
+
+      // Moverse hacia destino
+      const dx   = this.tx - this.x;
+      const dy   = this.ty - this.y;
+      const dist = Math.sqrt(dx*dx + dy*dy);
+
+      this.tail.push({ x: this.x, y: this.y });
+      if (this.tail.length > 12) this.tail.shift();
+
+      if (dist < this.speed + 2) {
+        this.explode();
+      } else {
+        const nx = dx / dist;
+        const ny = dy / dist;
+        this.x += nx * this.speed;
+        this.y += ny * this.speed;
+      }
+    }
+    explode() {
+      this.exploded = true;
+      const count  = 60 + Math.floor(Math.random() * 50);
+      const colors = [this.color, PALETTE[Math.floor(Math.random()*PALETTE.length)]];
+
+      for (let i = 0; i < count; i++) {
+        const angle  = (Math.PI * 2 / count) * i + Math.random() * 0.3;
+        const speed  = 1.5 + Math.random() * 4;
+        const color  = colors[Math.floor(Math.random() * colors.length)];
+        const radius = 2 + Math.random() * 2.5;
+        particles.push(new Particle(
+          this.x, this.y,
+          Math.cos(angle) * speed,
+          Math.sin(angle) * speed,
+          color, radius, 1
+        ));
+      }
+
+      // Chispas extras
+      for (let i = 0; i < 20; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 0.5 + Math.random() * 2;
+        particles.push(new Particle(
+          this.x, this.y,
+          Math.cos(angle) * speed,
+          Math.sin(angle) * speed,
+          '#ffffff', 1.2, 0.8
+        ));
+      }
+    }
+    draw() {
+      if (this.elapsed < this.delay || this.exploded) return;
+      // Rastro del cohete
+      for (let i = 0; i < this.tail.length; i++) {
+        const alpha = (i / this.tail.length) * 0.6;
+        ctx.beginPath();
+        ctx.arc(this.tail[i].x, this.tail[i].y, 2, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255,220,100,${alpha})`;
+        ctx.fill();
+      }
+      // Cohete
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, 3, 0, Math.PI * 2);
+      ctx.fillStyle = '#fff';
+      ctx.shadowBlur  = 12;
+      ctx.shadowColor = this.color;
+      ctx.fill();
+      ctx.restore();
+    }
+  }
+
+  /* ---- Loop de animación ---- */
+  let lastTime = 0;
+  let rockets  = [];
+
+  function loop(ts) {
+    const dt = ts - lastTime;
+    lastTime  = ts;
+
+    // Fondo semi-transparente para efecto de rastro
+    ctx.fillStyle = 'rgba(13,14,26,0.18)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Fade out global al final
+    const remaining = stopTime - ts;
+    if (remaining < DURATION - FADE_START) {
+      canvas.style.opacity = Math.max(0, remaining / (DURATION - FADE_START)).toFixed(3);
+    }
+
+    // Cohetes
+    rockets.forEach(r => { r.update(dt); r.draw(); });
+
+    // Partículas
+    particles = particles.filter(p => !p.isDead());
+    particles.forEach(p => { p.update(); p.draw(); });
+
+    if (ts < stopTime) {
+      animId = requestAnimationFrame(loop);
+    } else {
+      stopAnimation();
+    }
+  }
+
+  function stopAnimation() {
+    if (animId) cancelAnimationFrame(animId);
+    animId    = null;
+    particles = [];
+    rockets   = [];
+    if (ctx && canvas) ctx.clearRect(0, 0, canvas.width, canvas.height);
+    if (canvas) canvas.style.opacity = '0';
+  }
+
+  /* ---- API pública ---- */
+  window.launchFireworks = function () {
+    if (!canvas && !initCanvas()) return;  // primera vez
+    resize();
+
+    // Cancelar animación previa si hay
+    if (animId) cancelAnimationFrame(animId);
+    particles = [];
+    rockets   = [];
+
+    // Restaurar visibilidad
+    canvas.style.opacity = '1';
+
+    // Crear cohetes con delays escalonados
+    for (let i = 0; i < ROCKETS; i++) {
+      rockets.push(new Rocket(i * (DURATION * 0.6 / ROCKETS)));
+    }
+
+    stopTime = performance.now() + DURATION;
+    lastTime = performance.now();
+    animId   = requestAnimationFrame(loop);
+  };
+})();
