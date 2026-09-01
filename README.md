@@ -1,5 +1,7 @@
 # 🎯 Rally STI 2026 — Panel de Evaluador
 
+Página: https://montes-uia.github.io/visita.github.io/
+
 Aplicación web estática para el conteo de puntos y ranking del Rally STI.
 
 ## Características
